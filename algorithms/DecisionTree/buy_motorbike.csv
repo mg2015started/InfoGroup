@@ -1,0 +1,15 @@
+Age	Income	Region	Credit rating	Buy motorbike?
+<20	High	USA	Low	No
+<20	High	USA	Low	No
+21…50	High	USA	Low	Yes
+>50	Medium	USA	Low	Yes
+>50	Low	CHINA	Low	Yes
+>50	Low	CHINA	High	No
+21…50	Low	CHINA	High	Yes
+<20	Medium	USA	Low	No
+<20	Low	CHINA	Low	Yes
+>50	Medium	CHINA	Low	Yes
+<20	Medium	CHINA	High	Yes
+21…50	Medium	USA	High	Yes
+21…50	High	CHINA	Low	Yes
+>50	Medium	USA	High	No
