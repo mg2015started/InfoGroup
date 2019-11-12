@@ -5,6 +5,10 @@ import pandas as pd
 from nltk import word_tokenize, pos_tag
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
+from sklearn.cluster import DBSCAN
+from sklearn.decomposition import PCA
+from scipy.cluster.hierarchy import ward, dendrogram
+import matplotlib.pyplot as plt
 
 """
 1. preprocess the text
@@ -119,8 +123,12 @@ def kl_divergence(a, b):
     # scipy way
     # kl = scipy.stats.entropy(a, b)
     # todo deal with zero
-    kl = np.sum(np.where(a * b != 0, a * np.log(a / b), 0))
+    kl = np.sum(np.where(a * b != 0, a * np.log(a / b+1e-8), 0))
     return kl
+
+
+def cosine_similarity(a, b):
+    return np.sum(np.dot(a, b)/(np.linalg.norm(a)*np.linalg.norm(b)+1e-8))
 
 
 def average_kl_divergence(a, b):
@@ -137,25 +145,60 @@ def average_kl_divergence(a, b):
     return akl
 
 
-def batch_average_kl_divergence(a, bs):
+def batch_distance(a, bs, dist_func):
     """
     cal avg kl between distribution and distributions
     @param a: vector1
     @param bs: vector2 s
     @return: avg kls
     """
-    akls = [average_kl_divergence(a, b) for i, b in bs.iterrows()]
+    akls = [dist_func(a, b) for i, b in bs.iterrows()]
     return np.array(akls)
+
+
+def use_DBSCAN(dist):
+    clustering = DBSCAN(eps=0.0053, metric='precomputed', min_samples=3).fit(dist)
+    labels = clustering.labels_
+    print(labels)
+
+
+def use_hierarchy(dist):
+    linkage_matrix = ward(dist)
+    plt.figure(figsize=(15, 20))
+    dendrogram(linkage_matrix, orientation='right', labels=dataset['title'].tolist())
+    plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+    plt.tight_layout()
+    plt.savefig('ward_cluster.png')
+
+
+def use_pca(data, labels):
+    data_2 = PCA(n_components=2).fit(data)
+    # plt.scatter(x, y, alpha=0.6)
+    return
 
 
 if __name__ == '__main__':
     dataset, features = load_dataset("AAAI-14+Accepted+Papers.csv")
     contents = dataset['title'] + " " + dataset['keywords'] + " " + dataset['abstract']
 
-    # process data
-    contents = contents.apply(lambda x: process_text(x))
+    # # process data
+    # contents = contents.apply(lambda x: process_text(x))
 
-    # vectors for each document, shape: (|D|, |words|)
-    tf_idf_vector = tf_idf(contents)
-    kl_matrix = tf_idf_vector.apply(lambda x: batch_average_kl_divergence(x, tf_idf_vector), axis=1)
-    print(kl_matrix)
+    # # vectors for each document, shape: (|D|, |words|)
+    # tf_idf_vector = tf_idf(contents)
+    # # dist_matrix = tf_idf_vector.apply(lambda x: batch_distance(x, tf_idf_vector, average_kl_divergence), axis=1)
+    # dist_matrix = tf_idf_vector.apply(lambda x: batch_distance(x, tf_idf_vector, cosine_similarity), axis=1)
+    # print(dist_matrix)
+    #
+    # # covert to numpy array
+    # dist_matrix_ = []
+    # for ele in dist_matrix.values:
+    #     dist_matrix_.append(ele)
+    # dist_matrix_ = np.array(dist_matrix_).astype(np.float32)
+    # np.save('cosine_matrix.npy', dist_matrix_)
+
+    # load distance matrix, and to cluster
+    dist_matrix = np.load('cosine_matrix.npy')
+    # # use_DBSCAN(dist_matrix)
+    # hierarchical clustering
+    use_hierarchy(dist_matrix)
